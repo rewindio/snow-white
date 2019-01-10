@@ -10,5 +10,5 @@ WORKDIR /src
 
 RUN pip install -r requirements.txt
 
-ENTRYPOINT ["python","snowwhite.py"]
+ENTRYPOINT ["python","snow-white.py"]
 CMD ["-h"]
