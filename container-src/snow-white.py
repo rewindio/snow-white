@@ -307,6 +307,8 @@ else:
                         Details = True
                     )
 
+                    print("The command status is " + command_status['CommandInvocations'][0]['Status'])
+
                     # Check if the command worked
                     if command_status['CommandInvocations'][0]['Status'] == 'Success':
                         instances_command_status[instance] = 'SUCCESS'
