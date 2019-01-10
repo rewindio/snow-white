@@ -301,15 +301,16 @@ else:
             for instance in instances_for_command:
                 print("Checking command status for " + instance + " in command " + command_id)
                 try:
-                    command_status = ssm_client.get_command_invocation(
+                    command_status = ssm_client.list_command_invocations(
                         CommandId = command_id,
-                        InstanceId = instance
+                        InstanceId = instance,
+                        Details = True
                     )
 
                     # Check if the command worked
-                    if command_status['Status'] == 'Success':
+                    if command_status['CommandInvocations'][0]['Status'] == 'Success':
                         instances_command_status[instance] = 'SUCCESS'
-                    elif command_status['Status'] in ssm_failed_statuses:
+                    elif command_status['CommandInvocations'][0]['Status'] in ssm_failed_statuses:
                         status_code = command_status['ResponseCode']
                         instances_command_status[instance] = 'FAILED-' + str(status_code) 
                         failed_commands = True
