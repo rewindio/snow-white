@@ -8,6 +8,15 @@ Parameters:
   SlackChannel:
     Type: String
     Default: "#general"
+  CfnStackName:
+    Type: String
+    Default: "snow-white"
+  CfnQuietDocName:
+    Type: String
+    Default: "QuietSideKiqDocument"
+  CfnWakeDocName:
+    Type: String
+    Default: "WakeSideKiqDocument"
 
 Resources:
   LogGroup:
@@ -44,11 +53,14 @@ Resources:
               Name: "NOTIFY_SLACK_CHANNEL"
               Value: !Ref SlackChannel
             - 
-              Name: "QUIET_COMMAND_DOC_NAME"
-              Value: !Ref QuietSideKiqDocument
+              Name: "CFN_STACK_NAME"
+              Value: !Ref CfnStackName
             - 
-              Name: "WAKE_COMMAND_DOC_NAME"
-              Value: !Ref WakeSideKiqDocument
+              Name: "QUIET_COMMAND_LOGICAL_NAME"
+              Value: !Ref CfnQuietDocName
+            - 
+              Name: "WAKE_COMMAND_LOGICAL_NAME"
+              Value: !Ref CfnWakeDocName
             -
               Name: "EB_ENV_NAME_PATTERN_STRING"
               Value: "workers"
@@ -81,6 +93,7 @@ Resources:
                   - "elasticloadbalancing:DescribeLoadBalancers"
                   - "elasticbeanstalk:DescribeEnvironments"
                   - "autoscaling:DescribeAutoScalingGroups"
+                  - "cloudformation:DescribeStackResource"
                   - "ecs:DescribeTasks"
                   - "ssm:SendCommand"
                   - "ssm:ListCommandInvocations"

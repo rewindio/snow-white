@@ -21,8 +21,11 @@ To obtain the Slack userID, visit Slack in a browser, view a user's profile and 
 Instances that you wish to use Snow White with must be running under a role that allows the SSM agent to run.  Generally, just attach the managed policy `AmazonEC2RoleForSSM` to the role to grant the required permissions.
 
 # AWS Installation
-The pieces which run in AWS are managed via Cloudformation.  Create a stack using the template in the `cfn` folder.  It takes 2 parameters:
+The pieces which run in AWS are managed via Cloudformation.  Create a stack using the template in the `cfn` folder.  It takes 4 parameters:
 
+* CfnStackName - the name of the stack you are creating in each region (recommend: snow-white)
+* CfnWakeDocName - the logical name of the wake command (leave as default)
+* QuietCommnadName - the logical name of the quiet command (leave as default)
 * SlackWebhook - the full URL of a Slack incoming webhook 
 * SlackChannel - the name of the Slack channel to send notifications to
 
