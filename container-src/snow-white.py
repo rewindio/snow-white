@@ -154,6 +154,30 @@ def get_eb_instances(envid, instances_for_command, eb_client):
     for instance in response['EnvironmentResources']['Instances']:
         instances_for_command[instance['Id']] = response['EnvironmentResources']['EnvironmentName']
 
+
+#
+# Get the name of the SSM command document to run from the CFN stack resources
+#
+def get_ssm_doc_name(cfn_stack_name, logical_doc_name, cfn_client):
+
+    ssm_doc_name = ""
+    response = None
+
+    try:
+        response = cfn_client.describe_stack_resource(
+            StackName=cfn_stack_name,
+            LogicalResourceId=logical_doc_name
+        )
+
+    except ClientError as e:
+        print("Unexpected error obtaining SSM document: "+ e.response['Error']['Code'])
+
+    if response:
+        if 'PhysicalResourceId' in response['StackResourceDetail']:
+            ssm_doc_name = response['StackResourceDetail']['PhysicalResourceId']
+
+    return ssm_doc_name
+
 #
 # Submit the run command to SSM to run on our list of instances
 #
@@ -211,17 +235,23 @@ if 'ECS_CLUSTER_REGION' not in os.environ:
 else:
     ecs_cluster_region = os.environ['ECS_CLUSTER_REGION']
 
-if 'QUIET_COMMAND_DOC_NAME' not in os.environ:
-    print("Error: QUIET_COMMAND_DOC_NAME environment variable must be set")
+if 'QUIET_COMMAND_LOGICAL_NAME' not in os.environ:
+    print("Error: QUIET_COMMAND_LOGICAL_NAME environment variable must be set")
     exit(-1)
 else:
-    quiet_command_doc = os.environ['QUIET_COMMAND_DOC_NAME']
+    quiet_command_logical_name = os.environ['QUIET_COMMAND_LOGICAL_NAME']
 
-if 'WAKE_COMMAND_DOC_NAME' not in os.environ:
-    print("Error: WAKE_COMMAND_DOC_NAME environment variable must be set")
+if 'WAKE_COMMAND_LOGICAL_NAME' not in os.environ:
+    print("Error: WAKE_COMMAND_LOGICAL_NAME environment variable must be set")
     exit(-1)
 else:
-    wake_command_doc = os.environ['WAKE_COMMAND_DOC_NAME']
+    wake_command_logical_name = os.environ['WAKE_COMMAND_LOGICAL_NAME']
+
+if 'CFN_STACK_NAME' not in os.environ:
+    print("Error: CFN_STACK_NAME environment variable must be set")
+    exit(-1)
+else:
+    cfn_stack_name = os.environ['CFN_STACK_NAME']
 
 if 'SLACK_WEBHOOK' in os.environ:
     slack_webhook_url = os.environ['SLACK_WEBHOOK']
@@ -242,9 +272,11 @@ http = urllib3.PoolManager(cert_reqs='CERT_REQUIRED', ca_certs=certifi.where())
 # Boto clients
 eb_client = boto3.client('elasticbeanstalk', region_name=aws_region)
 ssm_client = boto3.client('ssm', region_name=aws_region)
+cfn_client = boto3.client('cloudformation', region_name=aws_region)
 
 iam_client = boto3.client('iam', region_name=ecs_cluster_region)
 ecs_client = boto3.client('ecs', region_name=ecs_cluster_region)
+
 
 # Who started this task?
 invoking_user = get_invoking_user(http, ecs_client, iam_client)
@@ -284,10 +316,21 @@ else:
     # Run our command on the list of instances for all environments
     if worker_action == "quiet":
         print("Running the QUIET command on the workers")
-        command_id = submit_ssm_command(instances_for_command, quiet_command_doc, ssm_client)
+        quiet_command_doc = get_ssm_doc_name(cfn_stack_name, quiet_command_logical_name, cfn_client)
+
+        if quiet_command_doc:
+            command_id = submit_ssm_command(instances_for_command, quiet_command_doc, ssm_client)
+        else:
+            print("Error occured getting the quiet command doc name")
     elif worker_action == "wake":
         print("Running the WAKE command on the workers")
-        command_id = submit_ssm_command(instances_for_command, wake_command_doc, ssm_client)
+
+        wake_command_doc = get_ssm_doc_name(cfn_stack_name, wake_command_logical_name, cfn_client)
+
+        if wake_command_doc:
+            command_id = submit_ssm_command(instances_for_command, wake_command_doc, ssm_client)
+        else:
+            print("Error occured getting the wake command doc name")
 
     time.sleep(2)  # https://stackoverflow.com/questions/50067035/retrieving-command-invocation-in-aws-ssm
 
