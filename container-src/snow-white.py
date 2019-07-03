@@ -342,6 +342,7 @@ else:
         attempts = 1
         while attempts <= max_attempts:
             for instance in instances_for_command:
+                command_status_string = None
                 print("Checking command status for " + instance + " in command " + command_id)
                 try:
                     command_status = ssm_client.list_command_invocations(
@@ -350,14 +351,27 @@ else:
                         Details = True
                     )
 
-                    pprint.pprint(command_status)
+                    # Do we have a status?
+                    if 'CommandInvocations' in command_status:
+                        if len(command_status['CommandInvocations']) > 0:
+                            if 'Status' in command_status['CommandInvocations'][0]:
+                                command_status_string = command_status['CommandInvocations'][0]['Status'])
+                            else:
+                                print("No status found in command_status")
+                                pprint.pprint(command_status)
+                        else:
+                            print("No invocations found in command_status")
+                            pprint.pprint(command_status)
+                    else:
+                        print("No command invocations found in command_status")
+                        pprint.pprint(command_status)
 
-                    print("The command status is " + command_status['CommandInvocations'][0]['Status'])
+                    print("The command status is " + command_status_string
 
                     # Check if the command worked
-                    if command_status['CommandInvocations'][0]['Status'] == 'Success':
+                    if command_status_string == 'Success':
                         instances_command_status[instance] = 'SUCCESS'
-                    elif command_status['CommandInvocations'][0]['Status'] in ssm_failed_statuses:
+                    elif command_status_string in ssm_failed_statuses:
                         status_code = command_status['ResponseCode']
                         instances_command_status[instance] = 'FAILED-' + str(status_code) 
                         failed_commands = True
