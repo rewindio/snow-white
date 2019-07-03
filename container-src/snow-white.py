@@ -366,7 +366,7 @@ else:
                         print("No command invocations found in command_status")
                         pprint.pprint(command_status)
 
-                    print("The command status is " + command_status_string
+                    print("The command status is " + command_status_string)
 
                     # Check if the command worked
                     if command_status_string == 'Success':
