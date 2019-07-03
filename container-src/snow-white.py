@@ -355,7 +355,7 @@ else:
                     if 'CommandInvocations' in command_status:
                         if len(command_status['CommandInvocations']) > 0:
                             if 'Status' in command_status['CommandInvocations'][0]:
-                                command_status_string = command_status['CommandInvocations'][0]['Status'])
+                                command_status_string = command_status['CommandInvocations'][0]['Status']
                             else:
                                 print("No status found in command_status")
                                 pprint.pprint(command_status)
