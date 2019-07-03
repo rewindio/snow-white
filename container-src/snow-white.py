@@ -350,6 +350,8 @@ else:
                         Details = True
                     )
 
+                    pprint.pprint(command_status)
+
                     print("The command status is " + command_status['CommandInvocations'][0]['Status'])
 
                     # Check if the command worked
