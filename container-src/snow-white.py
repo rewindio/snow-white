@@ -366,15 +366,16 @@ else:
                         print("No command invocations found in command_status")
                         pprint.pprint(command_status)
 
-                    print("The command status is " + command_status_string)
+                    if command_status_string:
+                        print("The command status is " + command_status_string)
 
-                    # Check if the command worked
-                    if command_status_string == 'Success':
-                        instances_command_status[instance] = 'SUCCESS'
-                    elif command_status_string in ssm_failed_statuses:
-                        status_code = command_status['ResponseCode']
-                        instances_command_status[instance] = 'FAILED-' + str(status_code) 
-                        failed_commands = True
+                        # Check if the command worked
+                        if command_status_string == 'Success':
+                            instances_command_status[instance] = 'SUCCESS'
+                        elif command_status_string in ssm_failed_statuses:
+                            status_code = command_status['ResponseCode']
+                            instances_command_status[instance] = 'FAILED-' + str(status_code) 
+                            failed_commands = True
 
                 except ClientError as e:
                     print("Unexpected error checking command status: "+ e.response['Error']['Code'])
