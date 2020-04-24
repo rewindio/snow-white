@@ -95,6 +95,7 @@ Resources:
                   - "autoscaling:DescribeAutoScalingGroups"
                   - "cloudformation:DescribeStackResource"
                   - "cloudformation:ListStackResources"
+                  - "cloudformation:DescribeStacks"
                   - "ecs:DescribeTasks"
                   - "ssm:SendCommand"
                   - "ssm:ListCommandInvocations"
