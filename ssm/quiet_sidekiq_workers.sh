@@ -39,7 +39,7 @@ is_worker_stopping() {
 # MAINLINE
 # 
 
-sidekiq_workers=$(pgrep -lf ^sidekiq)
+sidekiq_workers=$(pgrep -lfa ^sidekiq)
 worker_count=0
 
 IFS=$'\n'
@@ -60,8 +60,8 @@ unset IFS
 # has a timeout
 while :
 do
-    sidekiq_workers=$(pgrep -lf ^sidekiq) # Re-get the list of workers
-    worker_count=$(pgrep -lf ^sidekiq | wc -l)
+    sidekiq_workers=$(pgrep -lfa ^sidekiq) # Re-get the list of workers
+    worker_count=$(pgrep -lfa ^sidekiq | wc -l)
     workers_idle=0
 
     echo "There are ${worker_count} workers running"

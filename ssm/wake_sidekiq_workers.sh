@@ -37,7 +37,7 @@ is_worker_stopping() {
 # MAINLINE
 # 
 
-sidekiq_workers=$(pgrep -lf ^sidekiq)
+sidekiq_workers=$(pgrep -lfa ^sidekiq)
 
 IFS=$'\n'
 for worker in ${sidekiq_workers}
