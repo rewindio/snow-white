@@ -17,6 +17,9 @@ Parameters:
   CfnWakeDocName:
     Type: String
     Default: "WakeSideKiqDocument"
+  CfnStopDocName:
+    Type: String
+    Default: "StopSideKiqDocument"
 
 Resources:
   LogGroup:
@@ -61,6 +64,9 @@ Resources:
             - 
               Name: "WAKE_COMMAND_LOGICAL_NAME"
               Value: !Ref CfnWakeDocName
+            - 
+              Name: "STOP_COMMAND_LOGICAL_NAME"
+              Value: !Ref CfnStopDocName
             -
               Name: "EB_ENV_NAME_PATTERN_STRING"
               Value: "workers"
