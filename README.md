@@ -30,6 +30,32 @@ The pieces which run in AWS are managed via Cloudformation.  Create a stack usin
 * SlackWebhook - the full URL of a Slack incoming webhook 
 * SlackChannel - the name of the Slack channel to send notifications to
 
+You may also build and deploy using AWS SAM (tested with SAM CLI, version 1.22.0):
+
+## Build
+
+```shell
+sam build --use-container --debug --template cfn/snow-white-cfn.yml
+```
+
+## Deploy
+
+```shell
+sam deploy --debug --stack-name snow-white \
+  --s3-bucket deploy-bucket \
+  --region us-east-1 \
+  --template cfn/snow-white-cfn.yml \
+  --profile staging \
+  --capabilities CAPABILITY_NAMED_IAM \
+  --no-fail-on-empty-changeset \
+  --parameter-overrides "SlackChannel=#snow_white_messages \
+                        SlackWebhook=https://hooks.slack.com/services/ABC/123 \
+                        CfnQuietDocName=QuietSideKiqDocument \
+                        CfnWakeDocName=WakeSideKiqDocument \
+                        CfnStopDocName=StopSideKiqDocument \
+                        CfnStackName=snow-white"
+```
+
 # Helper script Configuration (snow-white.sh)
 A small helper script is provided (syntax below) to invoke the Snow White fargate task.  Before running for the first time, you will need to set a few variables at the top of the script:
 
@@ -42,7 +68,7 @@ A small helper script is provided (syntax below) to invoke the Snow White fargat
 # Usage
 Clone this repo and run the snow-white.sh helper script.
 
-`usage: usage: snow-white -a quiet|wake -e <EB env name pattern> -f staging|production  -p <EB app name> -r <region>`
+`usage: usage: snow-white -a quiet|wake|stop -e <EB env name pattern> -f staging|production  -p <EB app name> -r <region>`
 
 Where:
 * -a designates if we are quieting or waking the workers
