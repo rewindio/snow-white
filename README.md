@@ -19,6 +19,7 @@ To obtain the Slack userID, visit Slack in a browser, view a user's profile and 
 
 # Elastic Beanstalk Configuration
 Instances that you wish to use Snow White with must be running under a role that allows the SSM agent to run.  Generally, just attach the managed policy `AmazonEC2RoleForSSM` to the role to grant the required permissions.
+Snow White was tested on Elasticbeanstalk v3 which uses EC2 instances running amazon linux 2, systemd and a single sidekiq service.  Note that original implementation used Elasticbeanstalk v2, upstart and 2 sidekiq processes.
 
 # AWS Installation
 The pieces which run in AWS are managed via Cloudformation.  Create a stack using the template in the `cfn` folder.  It takes 4 parameters:
@@ -28,6 +29,32 @@ The pieces which run in AWS are managed via Cloudformation.  Create a stack usin
 * QuietCommnadName - the logical name of the quiet command (leave as default)
 * SlackWebhook - the full URL of a Slack incoming webhook 
 * SlackChannel - the name of the Slack channel to send notifications to
+
+You may also build and deploy using AWS SAM (tested with SAM CLI, version 1.22.0):
+
+## Build
+
+```shell
+sam build --use-container --debug --template cfn/snow-white-cfn.yml
+```
+
+## Deploy
+
+```shell
+sam deploy --debug --stack-name snow-white \
+  --s3-bucket deploy-bucket \
+  --region us-east-1 \
+  --template cfn/snow-white-cfn.yml \
+  --profile staging \
+  --capabilities CAPABILITY_NAMED_IAM \
+  --no-fail-on-empty-changeset \
+  --parameter-overrides "SlackChannel=#snow_white_messages \
+                        SlackWebhook=https://hooks.slack.com/services/ABC/123 \
+                        CfnQuietDocName=QuietSideKiqDocument \
+                        CfnWakeDocName=WakeSideKiqDocument \
+                        CfnStopDocName=StopSideKiqDocument \
+                        CfnStackName=snow-white"
+```
 
 # Helper script Configuration (snow-white.sh)
 A small helper script is provided (syntax below) to invoke the Snow White fargate task.  Before running for the first time, you will need to set a few variables at the top of the script:
@@ -41,7 +68,7 @@ A small helper script is provided (syntax below) to invoke the Snow White fargat
 # Usage
 Clone this repo and run the snow-white.sh helper script.
 
-`usage: usage: snow-white -a quiet|wake -e <EB env name pattern> -f staging|production  -p <EB app name> -r <region>`
+`usage: usage: snow-white -a quiet|wake|stop -e <EB env name pattern> -f staging|production  -p <EB app name> -r <region>`
 
 Where:
 * -a designates if we are quieting or waking the workers
@@ -51,7 +78,7 @@ Where:
 * -f is the AWS profile to use
 
 Example:
-`./snowwhite.sh -a quiet -e workers -p MY-EB-APP -r us-east-1 -f staging`
+`./snow-white.sh -a quiet -e workers -p MY-EB-APP -r us-east-1 -f staging`
 
 This will submit a task to AWS Fargate which will in turn run an AWS SSM command on each instance of all Sidekiq workers in the EB application whose environment names contain the string `workers`.  The Fargate task will then monitor each worker until the queue is drained and will report back via Slack
 

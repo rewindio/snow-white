@@ -9,7 +9,7 @@ sec_group=YOUR SECURITY GROUP ID
 
 
 show_help() {
-    echo "usage: snow-white -a quiet|wake -e <EB env name pattern> -f staging|production  -p <EB app name> -r <region>"
+    echo "usage: snow-white -a quiet|wake|stop -e <EB env name pattern> -f staging|production  -p <EB app name> -r <region>"
 }
 
 #
@@ -40,7 +40,7 @@ if [ -z "${profile}" ] || [ -z "${ebapp}" ] || [ -z "${action}" ] || [ -z "${reg
     show_help
     exit 1
 else
-    if [ "${action}" != "quiet" ] && [ "${action}" != "wake" ]; then
+    if [ "${action}" != "quiet" ] && [ "${action}" != "wake" ] && [ "${action}" != "stop" ]; then
         show_help
         exit 1
     fi

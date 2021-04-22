@@ -247,6 +247,12 @@ if 'WAKE_COMMAND_LOGICAL_NAME' not in os.environ:
 else:
     wake_command_logical_name = os.environ['WAKE_COMMAND_LOGICAL_NAME']
 
+if 'STOP_COMMAND_LOGICAL_NAME' not in os.environ:
+    print("Error: STOP_COMMAND_LOGICAL_NAME environment variable must be set")
+    exit(-1)
+else:
+    stop_command_logical_name = os.environ['STOP_COMMAND_LOGICAL_NAME']
+
 if 'CFN_STACK_NAME' not in os.environ:
     print("Error: CFN_STACK_NAME environment variable must be set")
     exit(-1)
@@ -321,7 +327,15 @@ else:
         if quiet_command_doc:
             command_id = submit_ssm_command(instances_for_command, quiet_command_doc, ssm_client)
         else:
-            print("Error occured getting the quiet command doc name")
+            print("Error occurred getting the quiet command doc name")
+    elif worker_action == "stop":
+        print("Running the STOP command on the workers")
+        stop_command_doc = get_ssm_doc_name(cfn_stack_name, stop_command_logical_name, cfn_client)
+
+        if stop_command_doc:
+            command_id = submit_ssm_command(instances_for_command, stop_command_doc, ssm_client)
+        else:
+            print("Error occurred getting the stop command doc name")
     elif worker_action == "wake":
         print("Running the WAKE command on the workers")
 
@@ -330,7 +344,7 @@ else:
         if wake_command_doc:
             command_id = submit_ssm_command(instances_for_command, wake_command_doc, ssm_client)
         else:
-            print("Error occured getting the wake command doc name")
+            print("Error occurred getting the wake command doc name")
 
     time.sleep(2)  # https://stackoverflow.com/questions/50067035/retrieving-command-invocation-in-aws-ssm
 
@@ -411,6 +425,8 @@ else:
             slack_string = "The workers are all quiet for all environment names containing _" + eb_env_name_pattern_string + "_ in *" + eb_app_name + " (" + aws_region + ")*"
         elif worker_action == "wake":
             slack_string = "The workers are all awake for all environment names containing _" + eb_env_name_pattern_string + "_ in *" + eb_app_name + " (" + aws_region + ")*"
+        elif worker_action == "stop":
+            slack_string = "The workers are all stopped for all environment names containing _" + eb_env_name_pattern_string + "_ in *" + eb_app_name + " (" + aws_region + ")*"
 
     # Post some messages to Slack
     if send_to_slack_user:
