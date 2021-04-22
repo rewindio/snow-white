@@ -11,9 +11,27 @@ get_pid() {
     echo ${pid}
 }
 
+# Checks if systemd is available on the PATH
+# returns 0 if it is
+# returns 1 otherwise
+systemd_present() {
+    command -v systemctl &>/dev/null
+    echo $?
+}
+
 # Wakes up a worker by restarting the process
 wake_worker() {
-    systemctl restart sidekiq
+    local __workerinfo=$1
+
+    if [[ "$(systemd_present)" -ne "0" ]]; then
+        echo "systemctl could not be found"
+        # (kill and let it be restarted by upstart)
+        PID=$(get_pid $__workerinfo)
+        kill -TERM ${PID}
+    else
+        #use systemd to restart the one well known service
+        systemctl restart sidekiq
+    fi
 }
 
 # Returns the number of currently running jobs
@@ -31,7 +49,9 @@ is_worker_stopping() {
     echo "${stopping}"
 }
 
-# Checks to see if the worker is in the stopping state
+# Checks to see if the sidekiq process is running
+# returns 0 if it is running
+# returns > 0 if not running
 sidekiq_running() {
     systemctl is-active --quiet sidekiq
     echo $?
@@ -42,7 +62,7 @@ sidekiq_running() {
 #
 
 # If sidekiq was stopped, the wake script can also be used to start it up and be done
-if [[ "$(sidekiq_running)" -ne "0" ]]; then
+if [[ "$(systemd_present)" -eq "0" && "$(sidekiq_running)" -ne "0" ]]; then
     echo "Sidekiq is not running.  Start it up"
     wake_worker
 
@@ -67,7 +87,7 @@ for worker in ${sidekiq_workers}; do
         echo "Worker ${worker_pid} is running ${running_count} jobs"
 
         if [ ${running_count} -eq 0 ]; then
-            wake_worker
+            wake_worker "${worker}"
         else
             echo "Worker ${worker_pid} is still running ${running_count} - you cannot wake/restart this worker yet"
             exit 2

@@ -19,8 +19,11 @@ get_running_count() {
 }
 
 #quiets a worker
+# input: 17774 sidekiq 5.2.3 current [0 of 10 busy]
 quiet_worker() {
-    systemctl kill -s TSTP sidekiq
+    local __workerinfo=$1
+    PID=$(get_pid $__workerinfo)
+    kill -TSTP ${PID}
 }
 
 # Checks to see if the worker is in the stopping state
@@ -47,7 +50,7 @@ do
     echo  "Quieting worker ${worker}"
 
     # Quiet the worker
-    quiet_worker
+    quiet_worker "${worker}"
 done
 unset IFS
 
