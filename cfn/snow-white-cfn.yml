@@ -49,28 +49,21 @@ Resources:
               awslogs-group: !Ref LogGroup
               awslogs-stream-prefix: ecs
           Environment:
-            -
-              Name: "SLACK_WEBHOOK"
+            - Name: "SLACK_WEBHOOK"
               Value: !Ref SlackWebhook
-            -
-              Name: "NOTIFY_SLACK_CHANNEL"
+            - Name: "NOTIFY_SLACK_CHANNEL"
               Value: !Ref SlackChannel
-            - 
-              Name: "CFN_STACK_NAME"
+            - Name: "CFN_STACK_NAME"
               Value: !Ref CfnStackName
-            - 
-              Name: "QUIET_COMMAND_LOGICAL_NAME"
+            - Name: "QUIET_COMMAND_LOGICAL_NAME"
               Value: !Ref CfnQuietDocName
-            - 
-              Name: "WAKE_COMMAND_LOGICAL_NAME"
+            - Name: "WAKE_COMMAND_LOGICAL_NAME"
               Value: !Ref CfnWakeDocName
-            - 
-              Name: "STOP_COMMAND_LOGICAL_NAME"
+            - Name: "STOP_COMMAND_LOGICAL_NAME"
               Value: !Ref CfnStopDocName
-            -
-              Name: "EB_ENV_NAME_PATTERN_STRING"
+            - Name: "EB_ENV_NAME_PATTERN_STRING"
               Value: "workers"
- 
+
   SnowWhiteECSTaskRole:
     Description: Allows Snow White to run SSM tasks to control Sidekiq workers
     Type: AWS::IAM::Role
@@ -78,21 +71,19 @@ Resources:
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
-        - Effect: Allow
-          Principal:
-            Service:
-              - "ecs-tasks.amazonaws.com"
-          Action:
-            - sts:AssumeRole
+          - Effect: Allow
+            Principal:
+              Service:
+                - "ecs-tasks.amazonaws.com"
+            Action:
+              - sts:AssumeRole
       Path: /
       Policies:
-        - 
-          PolicyName: "Snow-White"
+        - PolicyName: "Snow-White"
           PolicyDocument:
             Version: "2012-10-17"
-            Statement: 
-              - 
-                Effect: "Allow"
+            Statement:
+              - Effect: "Allow"
                 Resource: "*"
                 Action:
                   - "elasticbeanstalk:DescribeEnvironmentResources"
@@ -117,116 +108,116 @@ Resources:
           - Effect: Allow
             Principal:
               Service: ecs-tasks.amazonaws.com
-            Action: 'sts:AssumeRole'
+            Action: "sts:AssumeRole"
       ManagedPolicyArns:
-        - 'arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy'
+        - "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 
   QuietSideKiqDocument:
     Type: AWS::SSM::Document
     Properties:
       DocumentType: Command
-      Content: 
+      Content:
         schemaVersion: "2.2"
         description: "Quiet Sidekiq Workers"
         parameters:
           executionTimeout:
             type: "String"
             default: "7200"
-            description: "(Optional) The time in seconds for a command to be completed before\
+            description:
+              "(Optional) The time in seconds for a command to be completed before\
               \ it is considered to have failed. Default is 3600 (1 hour). Maximum is 172800\
               \ (48 hours)."
             allowedPattern: "([1-9][0-9]{0,4})|(1[0-6][0-9]{4})|(17[0-1][0-9]{3})|(172[0-7][0-9]{2})|(172800)"
         mainSteps:
-        -
-          action: "aws:downloadContent"
-          name: "downloadScripts"
-          inputs:
-            sourceType: "GitHub"
-            sourceInfo: "{ \"owner\":\"rewindio\", \"repository\": \"snow-white\", \"branch\": \"main\", \"path\"\ : \"ssm/quiet_sidekiq_workers.sh\" }"
-            destinationPath: "/tmp"
-        - precondition:
-            StringEquals:
-            - "platformType"
-            - "Linux"
-          action: "aws:runShellScript"
-          name: "quiet_workers"
-          inputs:
-            runCommand:
-            - "ls -l"
-            - "chmod a+x /tmp/quiet_sidekiq_workers.sh"
-            - "/tmp/quiet_sidekiq_workers.sh"
-            workingDirectory: "/tmp"
-            timeoutSeconds: "{{ executionTimeout }}"
+          - action: "aws:downloadContent"
+            name: "downloadScripts"
+            inputs:
+              sourceType: "GitHub"
+              sourceInfo: '{ "owner": "rewindio", "repository": "snow-white", "getOptions": "branch:main", "path": "ssm/quiet_sidekiq_workers.sh" }'
+              destinationPath: "/tmp"
+          - precondition:
+              StringEquals:
+                - "platformType"
+                - "Linux"
+            action: "aws:runShellScript"
+            name: "quiet_workers"
+            inputs:
+              runCommand:
+                - "ls -l"
+                - "chmod a+x /tmp/quiet_sidekiq_workers.sh"
+                - "/tmp/quiet_sidekiq_workers.sh"
+              workingDirectory: "/tmp"
+              timeoutSeconds: "{{ executionTimeout }}"
   StopSideKiqDocument:
     Type: AWS::SSM::Document
     Properties:
       DocumentType: Command
-      Content: 
+      Content:
         schemaVersion: "2.2"
         description: "Stop Sidekiq Workers"
         parameters:
           executionTimeout:
             type: "String"
             default: "7200"
-            description: "(Optional) The time in seconds for a command to be completed before\
+            description:
+              "(Optional) The time in seconds for a command to be completed before\
               \ it is considered to have failed. Default is 3600 (1 hour). Maximum is 172800\
               \ (48 hours)."
             allowedPattern: "([1-9][0-9]{0,4})|(1[0-6][0-9]{4})|(17[0-1][0-9]{3})|(172[0-7][0-9]{2})|(172800)"
         mainSteps:
-        -
-          action: "aws:downloadContent"
-          name: "downloadScripts"
-          inputs:
-            sourceType: "GitHub"
-            sourceInfo: "{ \"owner\":\"rewindio\", \"repository\": \"snow-white\", \"branch\": \"main\", \"path\"\ : \"ssm/stop_sidekiq_workers.sh\" }"
-            destinationPath: "/tmp"
-        - precondition:
-            StringEquals:
-            - "platformType"
-            - "Linux"
-          action: "aws:runShellScript"
-          name: "stop_workers"
-          inputs:
-            runCommand:
-            - "ls -l"
-            - "chmod a+x /tmp/stop_sidekiq_workers.sh"
-            - "/tmp/stop_sidekiq_workers.sh"
-            workingDirectory: "/tmp"
-            timeoutSeconds: "{{ executionTimeout }}"
+          - action: "aws:downloadContent"
+            name: "downloadScripts"
+            inputs:
+              sourceType: "GitHub"
+              sourceInfo: '{ "owner": "rewindio", "repository": "snow-white", "getOptions": "branch:main", "path": "ssm/stop_sidekiq_workers.sh" }'
+              destinationPath: "/tmp"
+          - precondition:
+              StringEquals:
+                - "platformType"
+                - "Linux"
+            action: "aws:runShellScript"
+            name: "stop_workers"
+            inputs:
+              runCommand:
+                - "ls -l"
+                - "chmod a+x /tmp/stop_sidekiq_workers.sh"
+                - "/tmp/stop_sidekiq_workers.sh"
+              workingDirectory: "/tmp"
+              timeoutSeconds: "{{ executionTimeout }}"
 
   WakeSideKiqDocument:
     Type: AWS::SSM::Document
     Properties:
       DocumentType: Command
-      Content: 
+      Content:
         schemaVersion: "2.2"
         description: "Wake Sidekiq Workers"
         parameters:
           executionTimeout:
             type: "String"
             default: "7200"
-            description: "(Optional) The time in seconds for a command to be completed before\
+            description:
+              "(Optional) The time in seconds for a command to be completed before\
               \ it is considered to have failed. Default is 3600 (1 hour). Maximum is 172800\
               \ (48 hours)."
             allowedPattern: "([1-9][0-9]{0,4})|(1[0-6][0-9]{4})|(17[0-1][0-9]{3})|(172[0-7][0-9]{2})|(172800)"
         mainSteps:
-        -
-          action: "aws:downloadContent"
-          name: "downloadScripts"
-          inputs:
-            sourceType: "GitHub"
-            sourceInfo: "{ \"owner\":\"rewindio\", \"repository\": \"snow-white\", \"branch\": \"main\", \"path\"\ : \"ssm/wake_sidekiq_workers.sh\" }"
-            destinationPath: "/tmp"
-        - precondition:
-            StringEquals:
-            - "platformType"
-            - "Linux"
-          action: "aws:runShellScript"
-          name: "wake_workers"
-          inputs:
-            runCommand:
-            - "ls -l"
-            - "chmod a+x /tmp/wake_sidekiq_workers.sh"
-            - "/tmp/wake_sidekiq_workers.sh"
-            workingDirectory: "/tmp"
-            timeoutSeconds: "{{ executionTimeout }}"
+          - action: "aws:downloadContent"
+            name: "downloadScripts"
+            inputs:
+              sourceType: "GitHub"
+              sourceInfo: '{ "owner": "rewindio", "repository": "snow-white", "getOptions": "branch:main", "path": "ssm/wake_sidekiq_workers.sh" }'
+              destinationPath: "/tmp"
+          - precondition:
+              StringEquals:
+                - "platformType"
+                - "Linux"
+            action: "aws:runShellScript"
+            name: "wake_workers"
+            inputs:
+              runCommand:
+                - "ls -l"
+                - "chmod a+x /tmp/wake_sidekiq_workers.sh"
+                - "/tmp/wake_sidekiq_workers.sh"
+              workingDirectory: "/tmp"
+              timeoutSeconds: "{{ executionTimeout }}"
