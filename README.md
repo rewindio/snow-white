@@ -19,6 +19,7 @@ To obtain the Slack userID, visit Slack in a browser, view a user's profile and 
 
 # Elastic Beanstalk Configuration
 Instances that you wish to use Snow White with must be running under a role that allows the SSM agent to run.  Generally, just attach the managed policy `AmazonEC2RoleForSSM` to the role to grant the required permissions.
+Snow White was tested on Elasticbeanstalk v3 which uses EC2 instances running amazon linux 2, systemd and a single sidekiq service.  Note that original implementation used Elasticbeanstalk v2, upstart and 2 sidekiq processes.
 
 # AWS Installation
 The pieces which run in AWS are managed via Cloudformation.  Create a stack using the template in the `cfn` folder.  It takes 4 parameters:
@@ -51,7 +52,7 @@ Where:
 * -f is the AWS profile to use
 
 Example:
-`./snowwhite.sh -a quiet -e workers -p MY-EB-APP -r us-east-1 -f staging`
+`./snow-white.sh -a quiet -e workers -p MY-EB-APP -r us-east-1 -f staging`
 
 This will submit a task to AWS Fargate which will in turn run an AWS SSM command on each instance of all Sidekiq workers in the EB application whose environment names contain the string `workers`.  The Fargate task will then monitor each worker until the queue is drained and will report back via Slack
 
