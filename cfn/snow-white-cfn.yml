@@ -142,7 +142,7 @@ Resources:
           name: "downloadScripts"
           inputs:
             sourceType: "GitHub"
-            sourceInfo: "{ \"owner\":\"rewindio\", \"repository\": \"snow-white\", \"path\"\ : \"ssm/quiet_sidekiq_workers.sh\" }"
+            sourceInfo: "{ \"owner\":\"rewindio\", \"repository\": \"snow-white\", \"branch\": \"main\", \"path\"\ : \"ssm/quiet_sidekiq_workers.sh\" }"
             destinationPath: "/tmp"
         - precondition:
             StringEquals:
@@ -178,7 +178,7 @@ Resources:
           name: "downloadScripts"
           inputs:
             sourceType: "GitHub"
-            sourceInfo: "{ \"owner\":\"rewindio\", \"repository\": \"snow-white\", \"path\"\ : \"ssm/stop_sidekiq_workers.sh\" }"
+            sourceInfo: "{ \"owner\":\"rewindio\", \"repository\": \"snow-white\", \"branch\": \"main\", \"path\"\ : \"ssm/stop_sidekiq_workers.sh\" }"
             destinationPath: "/tmp"
         - precondition:
             StringEquals:
@@ -215,7 +215,7 @@ Resources:
           name: "downloadScripts"
           inputs:
             sourceType: "GitHub"
-            sourceInfo: "{ \"owner\":\"rewindio\", \"repository\": \"snow-white\", \"path\"\ : \"ssm/wake_sidekiq_workers.sh\" }"
+            sourceInfo: "{ \"owner\":\"rewindio\", \"repository\": \"snow-white\", \"branch\": \"main\", \"path\"\ : \"ssm/wake_sidekiq_workers.sh\" }"
             destinationPath: "/tmp"
         - precondition:
             StringEquals:
