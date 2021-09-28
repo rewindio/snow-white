@@ -1,20 +1,20 @@
+import json
+import os
+import pprint
+import sys
+import time
+
 import boto3
+import certifi
+import urllib3
 from botocore.exceptions import ClientError
 
-import os, sys
-import pprint
-import time
-import urllib3
-import certifi
-import json
 
 instances_for_command = {}
 instances_command_status = {}
 ssm_failed_statuses = ["Cancelled", "TimedOut", "Failed"]
 failed_commands = False
 slack_string = ""
-invoking_user_slack_id = None
-send_to_slack_user = False
 
 #
 # Queries the ECS task metadata service and returns the resulting json blob
@@ -31,13 +31,8 @@ def get_task_metadata(http_client_pool):
         return "{}"
 
 
-#
-# By using the started_by field on an ECS task, see if we can find their Slack ID
-# The slack ID is written as a tag on the IAM user
-#
-def get_invoking_user(http_client_pool, ecs_client, iam_client):
+def get_invoking_user(http_client_pool, ecs_client):
     response = None
-    slack_user_id = None
     started_by = None
     invoking_user = {}
 
@@ -62,40 +57,8 @@ def get_invoking_user(http_client_pool, ecs_client, iam_client):
                 started_by = response["tasks"][0]["startedBy"]
 
                 invoking_user["user"] = started_by
-                print("Trying to find Slack UID for " + started_by)
-                if started_by.lower() != "unknown":
-                    slack_user_id = get_slack_id_from_iam_user_tags(
-                        started_by, iam_client
-                    )
-                    invoking_user["slack_id"] = slack_user_id
 
     return invoking_user
-
-
-#
-# Given an IAM username, get the tags for the user and see if we have one
-# called slack_userid
-#
-def get_slack_id_from_iam_user_tags(iam_username, iam_client):
-    slack_id = None
-    response = None
-
-    # See if we have a tag on the IAM user that contains a slack ID
-    try:
-        response = iam_client.list_user_tags(UserName=iam_username)
-
-        for tag in response["Tags"]:
-            print("found tag " + tag["Key"] + " for user " + iam_username)
-            if tag["Key"] == "slack_userid":
-                slack_id = tag["Value"]
-
-    except ClientError as e:
-        print(
-            "Unexpected error obtaining tags for IAM user: "
-            + e.response["Error"]["Code"]
-        )
-
-    return slack_id
 
 
 #
@@ -226,13 +189,13 @@ def submit_ssm_command(instances_for_command, document_name, ssm_client):
 #
 if "WORKER_ACTION" not in os.environ:
     print("Error: WORKER_ACTION environment variable must be set")
-    exit(-1)
+    sys.exit(-1)
 else:
     worker_action = os.environ["WORKER_ACTION"].lower()
 
 if "EB_APP_NAME" not in os.environ:
     print("Error: EB_APP_NAME environment variable must be set")
-    exit(-1)
+    sys.exit(-1)
 else:
     eb_app_name = os.environ["EB_APP_NAME"]
 
@@ -250,25 +213,25 @@ else:
 
 if "QUIET_COMMAND_LOGICAL_NAME" not in os.environ:
     print("Error: QUIET_COMMAND_LOGICAL_NAME environment variable must be set")
-    exit(-1)
+    sys.exit(-1)
 else:
     quiet_command_logical_name = os.environ["QUIET_COMMAND_LOGICAL_NAME"]
 
 if "WAKE_COMMAND_LOGICAL_NAME" not in os.environ:
     print("Error: WAKE_COMMAND_LOGICAL_NAME environment variable must be set")
-    exit(-1)
+    sys.exit(-1)
 else:
     wake_command_logical_name = os.environ["WAKE_COMMAND_LOGICAL_NAME"]
 
 if "STOP_COMMAND_LOGICAL_NAME" not in os.environ:
     print("Error: STOP_COMMAND_LOGICAL_NAME environment variable must be set")
-    exit(-1)
+    sys.exit(-1)
 else:
     stop_command_logical_name = os.environ["STOP_COMMAND_LOGICAL_NAME"]
 
 if "CFN_STACK_NAME" not in os.environ:
     print("Error: CFN_STACK_NAME environment variable must be set")
-    exit(-1)
+    sys.exit(-1)
 else:
     cfn_stack_name = os.environ["CFN_STACK_NAME"]
 
@@ -295,14 +258,11 @@ eb_client = boto3.client("elasticbeanstalk", region_name=aws_region)
 ssm_client = boto3.client("ssm", region_name=aws_region)
 cfn_client = boto3.client("cloudformation", region_name=aws_region)
 
-iam_client = boto3.client("iam", region_name=ecs_cluster_region)
 ecs_client = boto3.client("ecs", region_name=ecs_cluster_region)
 
 
 # Who started this task?
-invoking_user = get_invoking_user(http, ecs_client, iam_client)
-if "slack_id" in invoking_user:
-    send_to_slack_user = True
+invoking_user = get_invoking_user(http, ecs_client)
 
 # Get a list of all the sidekiq worker envs in the EB application
 sidekiq_worker_eb_envs = get_eb_worker_envs(
@@ -311,44 +271,9 @@ sidekiq_worker_eb_envs = get_eb_worker_envs(
 
 if len(sidekiq_worker_eb_envs) == 0:
     # No worker environments found
-    if send_to_slack_user:
-        slack_string = (
-            "I didn't find any worker environments to _"
-            + worker_action
-            + "_ for environment names containing _"
-            + eb_env_name_pattern_string
-            + "_ in *"
-            + eb_app_name
-            + " ("
-            + aws_region
-            + ").*"
-        )
-        post_to_slack_channel(
-            http, slack_webhook_url, invoking_user["slack_id"], slack_string
-        )
-    else:
-        post_to_slack_channel(
-            http, slack_webhook_url, notify_slack_channel, slack_string
-        )
+    post_to_slack_channel(http, slack_webhook_url, notify_slack_channel, slack_string)
 else:
     # We have some workers to work with
-
-    # Post some messages to Slack
-    if send_to_slack_user:
-        slack_string = (
-            "I'm going to _"
-            + worker_action
-            + "_ the Sidekiq workers for all environment names containing _"
-            + eb_env_name_pattern_string
-            + "_ in *"
-            + eb_app_name
-            + " ("
-            + aws_region
-            + ").* I'll let you know when they are done"
-        )
-        post_to_slack_channel(
-            http, slack_webhook_url, invoking_user["slack_id"], slack_string
-        )
 
     if "user" in invoking_user:
         slack_string = (
@@ -495,7 +420,7 @@ else:
             time.sleep(10)
     else:
         print("ERROR: No command id returned from the ssm command send")
-        exit(-2)
+        sys.exit(-2)
 
     if failed_commands:
         # We had at least some commands that failed to run
@@ -563,11 +488,5 @@ else:
                 + aws_region
                 + ")*"
             )
-
-    # Post some messages to Slack
-    if send_to_slack_user:
-        post_to_slack_channel(
-            http, slack_webhook_url, invoking_user["slack_id"], slack_string
-        )
 
     post_to_slack_channel(http, slack_webhook_url, notify_slack_channel, slack_string)
